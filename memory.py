@@ -18,7 +18,15 @@ class Memory:
             self.conversations = Conversations(self.db)
             self.memories = Memories(self.db)
             self.processor = Processor(llm)
-            self.conversation_id = self.conversations.create()
+
+            conversation = self.conversations.get_latest()
+
+            if conversation is None:
+                self.conversation_id = (
+                    self.conversations.create()
+                )
+            else:
+                self.conversation_id = conversation["id"]
 
         except ImportError as e:
             print(
@@ -177,8 +185,13 @@ def run_pipeline(memory):
     if conversation_id is None:
         return
 
-    memory.store_user_message("My name is Rix.")
-    memory.store_assistant_message("Nice to meet you, Rix!")
+    memory.store_user_message(
+        "My name is Rix."
+    )
+
+    memory.store_assistant_message(
+        "Nice to meet you, Rix!"
+    )
 
     context = memory.recall(
         "What is my name?"
