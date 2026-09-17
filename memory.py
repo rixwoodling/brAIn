@@ -18,6 +18,7 @@ class Memory:
             self.conversations = Conversations(self.db)
             self.memories = Memories(self.db)
             self.processor = Processor(llm)
+            self.conversation_id = self.conversations.create()
 
         except ImportError as e:
             print(f"Memory initialization failed: {e}", file=sys.stderr)
@@ -25,6 +26,7 @@ class Memory:
             self.conversations = None
             self.memories = None
             self.processor = None
+            self.conversation_id = None
 
     # Create a conversation.
     def create_conversation(self, title=None):
@@ -59,9 +61,12 @@ class Memory:
         )
 
     # Get messages from a conversation.
-    def get_messages(self, conversation_id):
+    def get_messages(self, conversation_id=None):
         if self.conversations is None:
             return []
+
+        if conversation_id is None:
+            conversation_id = self.conversation_id
 
         return self.conversations.get_messages(
             conversation_id
@@ -80,27 +85,58 @@ class Memory:
         key, value = memory
         self.memories.remember(key, value)
 
-    # Recall stored memories.
+    # Recall stored memories and conversation history.
     def recall(self, prompt):
         if self.memories is None:
             return ""
 
-        memories = self.memories.get_all()
-
-        if not memories:
-            return ""
-
         context = []
 
-        for memory in memories:
-            context.append(
-                f"{memory['key']}: {memory['value']}"
-            )
+        memories = self.memories.get_all()
 
-        return (
-            "Known user information:\n"
-            + "\n".join(context)
-            + "\n\n"
+        if memories:
+            context.append("Known user information:")
+
+            for memory in memories:
+                context.append(
+                    f"{memory['key']}: {memory['value']}"
+                )
+
+        messages = self.get_messages()
+
+        if messages:
+            context.append("\nConversation history:")
+
+            for message in messages:
+                context.append(
+                    f"{message['role']}: {message['content']}"
+                )
+
+        if not context:
+            return ""
+
+        return "\n".join(context) + "\n\n"
+
+    # Store a user message.
+    def store_user_message(self, content):
+        if self.conversation_id is None:
+            return None
+
+        return self.add_message(
+            self.conversation_id,
+            "user",
+            content
+        )
+
+    # Store an assistant message.
+    def store_assistant_message(self, content):
+        if self.conversation_id is None:
+            return None
+
+        return self.add_message(
+            self.conversation_id,
+            "assistant",
+            content
         )
 
     # Forget a memory.
@@ -130,34 +166,17 @@ def initialize(llm):
 
 # Run the memory pipeline.
 def run_pipeline(memory):
-    conversation_id = memory.create_conversation(
-        "Test Conversation"
-    )
+    conversation_id = memory.conversation_id
 
     if conversation_id is None:
         return
 
-    memory.add_message(
-        conversation_id,
-        "user",
-        "My name is Rix."
-    )
+    memory.store_user_message("My name is Rix.")
+    memory.store_assistant_message("Nice to meet you, Rix!")
 
-    memory.add_message(
-        conversation_id,
-        "assistant",
-        "Nice to meet you, Rix!"
-    )
+    context = memory.recall("What is my name?")
 
-    messages = memory.get_messages(
-        conversation_id
-    )
-
-    for message in messages:
-        print(
-            f"{message['role']}: "
-            f"{message['content']}"
-        )
+    print(context)
 
 
 # Shut down the memory system.
