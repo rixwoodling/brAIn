@@ -23,6 +23,7 @@ class Conversations:
         )
 
         self.db.conn.commit()
+
         return cursor.lastrowid
 
     # Get a conversation.
@@ -34,6 +35,17 @@ class Conversations:
             WHERE id = ?
             """,
             (conversation_id,)
+        ).fetchone()
+
+    # Get the most recent conversation.
+    def get_latest(self):
+        return self.db.conn.execute(
+            """
+            SELECT id, title, created_at
+            FROM conversations
+            ORDER BY id DESC
+            LIMIT 1
+            """
         ).fetchone()
 
     # Get all conversations.
@@ -69,13 +81,19 @@ class Conversations:
         )
 
         self.db.conn.commit()
+
         return cursor.lastrowid
 
     # Get messages from a conversation.
     def get_messages(self, conversation_id):
         return self.db.conn.execute(
             """
-            SELECT id, conversation_id, role, content, created_at
+            SELECT
+                id,
+                conversation_id,
+                role,
+                content,
+                created_at
             FROM messages
             WHERE conversation_id = ?
             ORDER BY id
@@ -90,7 +108,9 @@ def initialize():
         from .database import Database
         return Conversations(Database())
     except ImportError as e:
-        print(f"Conversation initialization failed: {e}")
+        print(
+            f"Conversation initialization failed: {e}"
+        )
         return None
 
 
@@ -99,7 +119,14 @@ def run_pipeline(conversations):
     if conversations is None:
         return
 
-    conversation_id = conversations.create("Test Conversation")
+    conversation = conversations.get_latest()
+
+    if conversation is None:
+        conversation_id = conversations.create(
+            "Test Conversation"
+        )
+    else:
+        conversation_id = conversation["id"]
 
     conversations.add_message(
         conversation_id,
@@ -113,14 +140,22 @@ def run_pipeline(conversations):
         "Nice to meet you, Rix!"
     )
 
-    conversation = conversations.get(conversation_id)
-    messages = conversations.get_messages(conversation_id)
+    conversation = conversations.get(
+        conversation_id
+    )
+
+    messages = conversations.get_messages(
+        conversation_id
+    )
 
     print(f"Conversation: {conversation['id']}")
     print(f"Title: {conversation['title']}")
 
     for message in messages:
-        print(f"{message['role']}: {message['content']}")
+        print(
+            f"{message['role']}: "
+            f"{message['content']}"
+        )
 
 
 # Shut down the conversation system.
