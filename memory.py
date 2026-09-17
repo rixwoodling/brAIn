@@ -60,26 +60,28 @@ class Memory:
         key, value = memory
         self.memories.remember(key, value)
 
-    # Recall memories relevant to the prompt.
+    # Recall stored memories.
     def recall(self, prompt):
         if self.memories is None:
             return ""
 
-        text = prompt.lower()
+        memories = self.memories.get_all()
 
-        if "what is my name" in text or "what's my name" in text:
-            name = self.memories.recall("name")
+        if not memories:
+            return ""
 
-            if name:
-                return f"User's name is {name}.\n\n"
+        context = []
 
-        if "what do i like" in text:
-            likes = self.memories.recall("likes")
+        for memory in memories:
+            context.append(
+                f"{memory['key']}: {memory['value']}"
+            )
 
-            if likes:
-                return f"User likes {likes}.\n\n"
-
-        return ""
+        return (
+            "Known user information:\n"
+            + "\n".join(context)
+            + "\n\n"
+        )
 
     # Forget a memory.
     def forget(self, key):
