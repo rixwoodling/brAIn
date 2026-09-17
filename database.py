@@ -3,11 +3,15 @@
 import sqlite3
 from pathlib import Path
 
+
 class Database:
     """SQLite database layer."""
 
     # Initialize the database.
-    def __init__(self, path="memory.db"):
+    def __init__(self, path=None):
+        if path is None:
+            path = Path(__file__).resolve().parent / "memory.db"
+
         self.path = Path(path)
         self.conn = sqlite3.connect(self.path)
         self.conn.row_factory = sqlite3.Row
@@ -39,6 +43,7 @@ class Database:
     def close(self):
         self.conn.close()
 
+
 # Initialize the database.
 def initialize():
     try:
@@ -46,6 +51,7 @@ def initialize():
     except sqlite3.Error as e:
         print(f"Database initialization failed: {e}")
         return None
+
 
 # Run the database pipeline.
 def run_pipeline(db):
@@ -55,16 +61,19 @@ def run_pipeline(db):
     print(f"Database: {db.path}")
     print("SQLite: OK")
 
+
 # Shut down the database.
 def shutdown(db):
     if db is not None:
         db.close()
+
 
 # Run the database pipeline.
 def main():
     db = initialize()
     run_pipeline(db)
     shutdown(db)
+
 
 if __name__ == "__main__":
     main()
