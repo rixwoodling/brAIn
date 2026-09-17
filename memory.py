@@ -18,6 +18,7 @@ class Memory:
             self.conversations = Conversations(self.db)
             self.memories = Memories(self.db)
             self.processor = Processor(llm)
+            self.llm = llm
 
             conversation = self.conversations.get_latest()
 
@@ -38,6 +39,7 @@ class Memory:
             self.conversations = None
             self.memories = None
             self.processor = None
+            self.llm = None
             self.conversation_id = None
 
     # Create a conversation.
@@ -131,6 +133,25 @@ class Memory:
 
         return "\n".join(context) + "\n\n"
 
+    # Chat with the supplied LLM using memory and conversation context.
+    def chat(self, prompt):
+        if self.llm is None:
+            return ""
+
+        self.process(prompt)
+
+        context = self.recall(prompt)
+
+        response = self.llm(
+            system="",
+            prompt=context + prompt
+        )
+
+        self.store_user_message(prompt)
+        self.store_assistant_message(response)
+
+        return response
+
     # Store a user message.
     def store_user_message(self, content):
         if self.conversation_id is None:
@@ -180,24 +201,11 @@ def initialize(llm):
 
 # Run the memory pipeline.
 def run_pipeline(memory):
-    conversation_id = memory.conversation_id
-
-    if conversation_id is None:
-        return
-
-    memory.store_user_message(
-        "My name is Rix."
-    )
-
-    memory.store_assistant_message(
-        "Nice to meet you, Rix!"
-    )
-
-    context = memory.recall(
+    response = memory.chat(
         "What is my name?"
     )
 
-    print(context)
+    print(response)
 
 
 # Shut down the memory system.
