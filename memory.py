@@ -30,45 +30,26 @@ class Memory:
     def create_conversation(self, title=None):
         if self.conversations is None:
             return None
+
         return self.conversations.create(title)
 
     # Get a conversation.
     def get_conversation(self, conversation_id):
         if self.conversations is None:
             return None
+
         return self.conversations.get(conversation_id)
 
     # Get all conversations.
     def get_conversations(self):
         if self.conversations is None:
             return []
+
         return self.conversations.get_all()
-
-    # Determine whether a prompt may contain a durable memory.
-    def is_candidate(self, prompt):
-        text = prompt.strip().lower()
-
-        patterns = (
-            "my name is ",
-            "people call me ",
-            "i prefer ",
-            "i like ",
-            "i don't like ",
-            "i work with ",
-            "i work on ",
-            "i'm working on ",
-            "i am working on ",
-            "remember that ",
-        )
-
-        return text.startswith(patterns)
 
     # Process a prompt for potential memories.
     def process(self, prompt):
         if self.memories is None or self.processor is None:
-            return
-
-        if not self.is_candidate(prompt):
             return
 
         memory = self.processor.process(prompt)
@@ -104,12 +85,14 @@ class Memory:
     def forget(self, key):
         if self.memories is None:
             return
+
         self.memories.forget(key)
 
     # Get all memories.
     def get_memories(self):
         if self.memories is None:
             return []
+
         return self.memories.get_all()
 
     # Close the memory system.
