@@ -21,7 +21,11 @@ class Memory:
             self.conversation_id = self.conversations.create()
 
         except ImportError as e:
-            print(f"Memory initialization failed: {e}", file=sys.stderr)
+            print(
+                f"Memory initialization failed: {e}",
+                file=sys.stderr
+            )
+
             self.db = None
             self.conversations = None
             self.memories = None
@@ -60,17 +64,19 @@ class Memory:
             content
         )
 
-    # Get messages from a conversation.
-    def get_messages(self, conversation_id=None):
+    # Get recent messages from a conversation.
+    def get_messages(self, conversation_id=None, limit=10):
         if self.conversations is None:
             return []
 
         if conversation_id is None:
             conversation_id = self.conversation_id
 
-        return self.conversations.get_messages(
+        messages = self.conversations.get_messages(
             conversation_id
         )
+
+        return messages[-limit:]
 
     # Process a prompt for potential memories.
     def process(self, prompt):
@@ -85,17 +91,17 @@ class Memory:
         key, value = memory
         self.memories.remember(key, value)
 
-    # Recall stored memories and conversation history.
+    # Recall relevant memories and recent conversation history.
     def recall(self, prompt):
         if self.memories is None:
             return ""
 
         context = []
 
-        memories = self.memories.get_all()
+        memories = self.memories.search(prompt)
 
         if memories:
-            context.append("Known user information:")
+            context.append("Relevant user information:")
 
             for memory in memories:
                 context.append(
@@ -105,7 +111,7 @@ class Memory:
         messages = self.get_messages()
 
         if messages:
-            context.append("\nConversation history:")
+            context.append("\nRecent conversation:")
 
             for message in messages:
                 context.append(
@@ -174,7 +180,9 @@ def run_pipeline(memory):
     memory.store_user_message("My name is Rix.")
     memory.store_assistant_message("Nice to meet you, Rix!")
 
-    context = memory.recall("What is my name?")
+    context = memory.recall(
+        "What is my name?"
+    )
 
     print(context)
 
