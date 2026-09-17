@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 from datetime import datetime
 
 
@@ -45,22 +46,94 @@ class Memories:
 
         return row["value"]
 
-    # Search memories by text.
-    def search(self, query):
+    # Extract useful search terms from a query.
+    def _get_search_terms(self, query):
         if not query:
             return []
 
-        pattern = f"%{query.lower()}%"
+        words = re.findall(r"[a-zA-Z0-9_]+", query.lower())
+
+        stop_words = {
+            "a",
+            "an",
+            "and",
+            "are",
+            "be",
+            "can",
+            "did",
+            "do",
+            "does",
+            "for",
+            "from",
+            "how",
+            "i",
+            "is",
+            "it",
+            "my",
+            "of",
+            "on",
+            "or",
+            "the",
+            "this",
+            "to",
+            "was",
+            "what",
+            "when",
+            "where",
+            "who",
+            "why",
+            "with",
+            "you",
+        }
+
+        return [
+            word
+            for word in words
+            if word not in stop_words and len(word) > 1
+        ]
+
+    # Search memories by relevant terms.
+    def search(self, query, limit=10):
+        terms = self._get_search_terms(query)
+
+        if not terms:
+            return []
+
+        conditions = []
+        parameters = []
+
+        for term in terms:
+            pattern = f"%{term}%"
+
+            conditions.append(
+                """
+                (
+                    LOWER(key) LIKE ?
+                    OR LOWER(value) LIKE ?
+                )
+                """
+            )
+
+            parameters.extend([pattern, pattern])
+
+        sql = f"""
+            SELECT
+                id,
+                key,
+                value,
+                created_at,
+                updated_at
+            FROM memories
+            WHERE {" OR ".join(conditions)}
+            ORDER BY updated_at DESC
+            LIMIT ?
+        """
+
+        parameters.append(limit)
 
         return self.db.conn.execute(
-            """
-            SELECT id, key, value, created_at, updated_at
-            FROM memories
-            WHERE LOWER(key) LIKE ?
-               OR LOWER(value) LIKE ?
-            ORDER BY updated_at DESC
-            """,
-            (pattern, pattern)
+            sql,
+            parameters
         ).fetchall()
 
     # Forget a memory.
@@ -102,7 +175,17 @@ def run_pipeline(memories):
         return
 
     memories.remember("name", "Rix")
-    print("Name:", memories.recall("name"))
+    memories.remember("job", "Linux Engineer")
+    memories.remember("favorite_color", "Red")
+
+    results = memories.search(
+        "What is my favorite color?"
+    )
+
+    for memory in results:
+        print(
+            f"{memory['key']}: {memory['value']}"
+        )
 
 
 # Shut down the memory system.
