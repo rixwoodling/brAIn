@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 
 import json
-from anthropic import Anthropic
 
 
 class Processor:
     """Process prompts into persistent memories using an LLM."""
 
     # Initialize the processor.
-    def __init__(self):
-        self.client = Anthropic()
-        self.model = "claude-haiku-4-5-20251001"
+    def __init__(self, llm):
+        self.llm = llm
 
     # Process a prompt into a memory.
     def process(self, prompt):
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=256,
+        response = self.llm(
             system="""
 Determine whether the user's message contains information worth
 remembering long-term.
@@ -44,12 +40,7 @@ conversation.
 
 Return JSON only.
 """,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            prompt=prompt,
         )
 
         return self._parse_response(response)
@@ -57,8 +48,8 @@ Return JSON only.
     # Parse the LLM response.
     def _parse_response(self, response):
         try:
-            data = json.loads(response.content[0].text)
-        except (json.JSONDecodeError, IndexError, AttributeError):
+            data = json.loads(response)
+        except (json.JSONDecodeError, TypeError):
             return None
 
         if not data.get("remember"):
