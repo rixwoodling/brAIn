@@ -47,6 +47,26 @@ class Memory:
 
         return self.conversations.get_all()
 
+    # Add a message to a conversation.
+    def add_message(self, conversation_id, role, content):
+        if self.conversations is None:
+            return None
+
+        return self.conversations.add_message(
+            conversation_id,
+            role,
+            content
+        )
+
+    # Get messages from a conversation.
+    def get_messages(self, conversation_id):
+        if self.conversations is None:
+            return []
+
+        return self.conversations.get_messages(
+            conversation_id
+        )
+
     # Process a prompt for potential memories.
     def process(self, prompt):
         if self.memories is None or self.processor is None:
@@ -110,10 +130,34 @@ def initialize(llm):
 
 # Run the memory pipeline.
 def run_pipeline(memory):
-    conversation_id = memory.create_conversation("Test Conversation")
+    conversation_id = memory.create_conversation(
+        "Test Conversation"
+    )
 
-    if conversation_id is not None:
-        print(f"Conversation: {conversation_id}")
+    if conversation_id is None:
+        return
+
+    memory.add_message(
+        conversation_id,
+        "user",
+        "My name is Rix."
+    )
+
+    memory.add_message(
+        conversation_id,
+        "assistant",
+        "Nice to meet you, Rix!"
+    )
+
+    messages = memory.get_messages(
+        conversation_id
+    )
+
+    for message in messages:
+        print(
+            f"{message['role']}: "
+            f"{message['content']}"
+        )
 
 
 # Shut down the memory system.
@@ -121,7 +165,7 @@ def shutdown(memory):
     memory.close()
 
 
-# Run the memory chatbot pipeline.
+# Run the memory pipeline.
 def main():
     memory = initialize(None)
     run_pipeline(memory)
