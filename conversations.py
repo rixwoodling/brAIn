@@ -2,13 +2,13 @@
 
 from datetime import datetime
 
+
 class Conversations:
     """Conversation management."""
 
     # Initialize conversations.
-    def __init__(self, path="memory.db"):
-        from .database import Database
-        self.db = Database(path)
+    def __init__(self, db):
+        self.db = db
 
     # Create a conversation.
     def create(self, title=None):
@@ -46,17 +46,16 @@ class Conversations:
             """
         ).fetchall()
 
-    # Close the database.
-    def close(self):
-        self.db.close()
 
 # Initialize the conversation system.
 def initialize():
     try:
-        return Conversations()
+        from .database import Database
+        return Conversations(Database())
     except ImportError as e:
         print(f"Conversation initialization failed: {e}")
         return None
+
 
 # Run the conversation pipeline.
 def run_pipeline(conversations):
@@ -69,16 +68,19 @@ def run_pipeline(conversations):
     print(f"Conversation: {conversation['id']}")
     print(f"Title: {conversation['title']}")
 
+
 # Shut down the conversation system.
 def shutdown(conversations):
     if conversations is not None:
-        conversations.close()
+        conversations.db.close()
+
 
 # Run the conversation pipeline.
 def main():
     conversations = initialize()
     run_pipeline(conversations)
     shutdown(conversations)
+
 
 if __name__ == "__main__":
     main()
