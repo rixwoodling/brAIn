@@ -46,6 +46,43 @@ class Conversations:
             """
         ).fetchall()
 
+    # Add a message to a conversation.
+    def add_message(self, conversation_id, role, content):
+        now = datetime.now().isoformat(timespec="seconds")
+
+        cursor = self.db.conn.execute(
+            """
+            INSERT INTO messages (
+                conversation_id,
+                role,
+                content,
+                created_at
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                conversation_id,
+                role,
+                content,
+                now
+            )
+        )
+
+        self.db.conn.commit()
+        return cursor.lastrowid
+
+    # Get messages from a conversation.
+    def get_messages(self, conversation_id):
+        return self.db.conn.execute(
+            """
+            SELECT id, conversation_id, role, content, created_at
+            FROM messages
+            WHERE conversation_id = ?
+            ORDER BY id
+            """,
+            (conversation_id,)
+        ).fetchall()
+
 
 # Initialize the conversation system.
 def initialize():
@@ -63,10 +100,27 @@ def run_pipeline(conversations):
         return
 
     conversation_id = conversations.create("Test Conversation")
+
+    conversations.add_message(
+        conversation_id,
+        "user",
+        "My name is Rix."
+    )
+
+    conversations.add_message(
+        conversation_id,
+        "assistant",
+        "Nice to meet you, Rix!"
+    )
+
     conversation = conversations.get(conversation_id)
+    messages = conversations.get_messages(conversation_id)
 
     print(f"Conversation: {conversation['id']}")
     print(f"Title: {conversation['title']}")
+
+    for message in messages:
+        print(f"{message['role']}: {message['content']}")
 
 
 # Shut down the conversation system.
