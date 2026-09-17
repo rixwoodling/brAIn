@@ -47,18 +47,43 @@ Return JSON only.
 
     # Parse the LLM response.
     def _parse_response(self, response):
+        if not response:
+            return None
+
+        response = response.strip()
+
+        if response.startswith("```"):
+            lines = response.splitlines()
+
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+
+            response = "\n".join(lines).strip()
+
         try:
             data = json.loads(response)
         except (json.JSONDecodeError, TypeError):
             return None
 
-        if not data.get("remember"):
-            return None
+        if "remember" in data:
+            if not data.get("remember"):
+                return None
 
-        key = data.get("key")
-        value = data.get("value")
+            key = data.get("key")
+            value = data.get("value")
 
-        if not key or not value:
-            return None
+            if not key or not value:
+                return None
 
-        return key, value
+            return key, value
+
+        if len(data) == 1:
+            key, value = next(iter(data.items()))
+
+            if key and value:
+                return key, value
+
+        return None
