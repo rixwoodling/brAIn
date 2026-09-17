@@ -2,13 +2,13 @@
 
 from datetime import datetime
 
+
 class Memories:
     """Persistent memory management."""
 
     # Initialize memories.
-    def __init__(self, path="memory.db"):
-        from .database import Database
-        self.db = Database(path)
+    def __init__(self, db):
+        self.db = db
 
     # Store or update a memory.
     def remember(self, key, value):
@@ -67,17 +67,16 @@ class Memories:
             """
         ).fetchall()
 
-    # Close the database.
-    def close(self):
-        self.db.close()
 
 # Initialize the memory system.
 def initialize():
     try:
-        return Memories()
+        from .database import Database
+        return Memories(Database())
     except ImportError as e:
         print(f"Memory initialization failed: {e}")
         return None
+
 
 # Run the memory pipeline.
 def run_pipeline(memories):
@@ -87,16 +86,19 @@ def run_pipeline(memories):
     memories.remember("name", "Rix")
     print("Name:", memories.recall("name"))
 
+
 # Shut down the memory system.
 def shutdown(memories):
     if memories is not None:
-        memories.close()
+        memories.db.close()
+
 
 # Run the memory pipeline.
 def main():
     memories = initialize()
     run_pipeline(memories)
     shutdown(memories)
+
 
 if __name__ == "__main__":
     main()
