@@ -29,7 +29,7 @@ class Memories:
 
         self.db.conn.commit()
 
-    # Recall a memory.
+    # Recall a memory by key.
     def recall(self, key):
         row = self.db.conn.execute(
             """
@@ -44,6 +44,24 @@ class Memories:
             return None
 
         return row["value"]
+
+    # Search memories by text.
+    def search(self, query):
+        if not query:
+            return []
+
+        pattern = f"%{query.lower()}%"
+
+        return self.db.conn.execute(
+            """
+            SELECT id, key, value, created_at, updated_at
+            FROM memories
+            WHERE LOWER(key) LIKE ?
+               OR LOWER(value) LIKE ?
+            ORDER BY updated_at DESC
+            """,
+            (pattern, pattern)
+        ).fetchall()
 
     # Forget a memory.
     def forget(self, key):
