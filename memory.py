@@ -7,7 +7,7 @@ class Memory:
     """Public interface to the memory system."""
 
     # Initialize the memory system.
-    def __init__(self):
+    def __init__(self, llm):
         try:
             from .database import Database
             from .conversations import Conversations
@@ -17,7 +17,7 @@ class Memory:
             self.db = Database()
             self.conversations = Conversations(self.db)
             self.memories = Memories(self.db)
-            self.processor = Processor()
+            self.processor = Processor(llm)
 
         except ImportError as e:
             print(f"Memory initialization failed: {e}", file=sys.stderr)
@@ -30,21 +30,18 @@ class Memory:
     def create_conversation(self, title=None):
         if self.conversations is None:
             return None
-
         return self.conversations.create(title)
 
     # Get a conversation.
     def get_conversation(self, conversation_id):
         if self.conversations is None:
             return None
-
         return self.conversations.get(conversation_id)
 
     # Get all conversations.
     def get_conversations(self):
         if self.conversations is None:
             return []
-
         return self.conversations.get_all()
 
     # Determine whether a prompt may contain a durable memory.
@@ -107,14 +104,12 @@ class Memory:
     def forget(self, key):
         if self.memories is None:
             return
-
         self.memories.forget(key)
 
     # Get all memories.
     def get_memories(self):
         if self.memories is None:
             return []
-
         return self.memories.get_all()
 
     # Close the memory system.
@@ -124,8 +119,8 @@ class Memory:
 
 
 # Initialize the memory system.
-def initialize():
-    return Memory()
+def initialize(llm):
+    return Memory(llm)
 
 
 # Run the memory pipeline.
@@ -143,7 +138,7 @@ def shutdown(memory):
 
 # Run the memory chatbot pipeline.
 def main():
-    memory = initialize()
+    memory = initialize(None)
     run_pipeline(memory)
     shutdown(memory)
 
